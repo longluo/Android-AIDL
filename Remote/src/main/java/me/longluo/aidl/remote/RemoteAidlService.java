@@ -8,8 +8,11 @@ import android.content.ServiceConnection;
 import android.content.pm.ResolveInfo;
 import android.os.IBinder;
 import android.os.RemoteException;
+import android.util.Log;
 
 import androidx.annotation.Nullable;
+
+import java.util.Random;
 
 import me.longluo.aidl.IMyAidlInterface;
 
@@ -19,15 +22,24 @@ import me.longluo.aidl.IMyAidlInterface;
  */
 public class RemoteAidlService extends Service {
 
+    private static final String TAG = "luolong";
+
     private boolean mIsLocalKaleidoscopeInterfaceBound;
 
     private IMyAidlInterface mLocalKaleidoscopeInterface;
+
+    private static final int RANDOM_RANGE = 30;
+
+    private Random mRandom;
 
     @Override
     public void onCreate() {
         super.onCreate();
 
+        mRandom = new Random();
+
         Intent localServiceIntent = createLocalServiceIntent();
+
         if (localServiceIntent != null) {
             bindService(localServiceIntent, mLocalServiceConnection, Context.BIND_AUTO_CREATE);
         }
@@ -51,13 +63,9 @@ public class RemoteAidlService extends Service {
     private IMyAidlInterface mKaleidoscopeInterface = new IMyAidlInterface.Stub() {
         @Override
         public void drawLine(int x1, int y1, int x2, int y2) throws RemoteException {
-            if (mIsLocalKaleidoscopeInterfaceBound) {
-                try {
-                    mLocalKaleidoscopeInterface.drawLine(x1, y1, x2, y2);
-                } catch (RemoteException e) {
-                    e.printStackTrace();
-                }
-            }
+            Log.d(TAG, "drawLine (" + x1 + "," + y1 + ") -> (" + x2 + "," + y2 + ")");
+
+            handleDrawLineCommand(x1, y1, x2, y2);
         }
     };
 
@@ -95,4 +103,32 @@ public class RemoteAidlService extends Service {
             mIsLocalKaleidoscopeInterfaceBound = false;
         }
     };
+
+    private void handleDrawLineCommand(int x1, int y1, int x2, int y2) {
+        Log.d(TAG, "handleDrawLineCommand (" + x1 + "," + y1 + ") -> (" + x2 + "," + y2 + ")");
+
+        if (mIsLocalKaleidoscopeInterfaceBound) {
+            try {
+                mLocalKaleidoscopeInterface.drawLine(
+                        applyNoise(x1),
+                        applyNoise(y1),
+                        applyNoise(x2),
+                        applyNoise(y2));
+
+                mLocalKaleidoscopeInterface.drawLine(
+                        applyNoise(y1),
+                        applyNoise(x1),
+                        applyNoise(y2),
+                        applyNoise(x2));
+
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private int applyNoise(int input) {
+        return input + mRandom.nextInt(RANDOM_RANGE) - (RANDOM_RANGE / 2);
+    }
+
 }

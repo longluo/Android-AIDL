@@ -1,15 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="@dimen/activity_horizontal_margin"
-    tools:context=".MainActivity">
+    android:padding="8dp">
 
-    <Button
-        android:id="@+id/test_button"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Test remote AIDL connection" />
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:text="Remote view: rendered via AIDL commands"
+            android:textColor="#333"
+            android:textSize="11sp" />
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="180dp"
+            android:background="#ccc"
+            android:padding="2dp">
+
+            <me.longluo.aidl.local.OutputDrawingCanvas
+                android:id="@+id/output_drawing_canvas"
+                android:layout_width="180dp"
+                android:layout_height="match_parent"
+                android:layout_centerInParent="true"
+                android:background="#000" />
+        </RelativeLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:text="Local view: draw below with your finger"
+            android:textColor="#333"
+            android:textSize="11sp" />
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="180dp"
+            android:background="#ccc"
+            android:padding="2dp">
+
+            <me.longluo.aidl.local.InputDrawingCanvas
+                android:id="@+id/input_drawing_canvas"
+                android:layout_width="180dp"
+                android:layout_height="match_parent"
+                android:layout_centerInParent="true"
+                android:background="#000" />
+
+        </RelativeLayout>
+
+    </LinearLayout>
 
 </RelativeLayout>

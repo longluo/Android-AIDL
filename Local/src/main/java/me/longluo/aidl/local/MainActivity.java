@@ -9,6 +9,9 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
@@ -31,36 +34,68 @@ public class MainActivity extends AppCompatActivity {
     private boolean mIsRemoteKaleidoscopeInterfaceBound;
 
     private IMyAidlInterface mRemoteKaleidoscopeInterface;
+	
+    private InputDrawingCanvas mInputDrawingCanvas;
+	
+    private OutputDrawingCanvas mOutputDrawingCanvas;
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.main_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == R.id.menu_item_clear) {
+            mOutputDrawingCanvas.clear();
+            mInputDrawingCanvas.clear();
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        mInputDrawingCanvas = findViewById(R.id.input_drawing_canvas);
+        mInputDrawingCanvas.setDelegate(new InputDrawingCanvas.Delegate() {
+            @Override
+            public void onLineDrawn(int x1, int y1, int x2, int y2) {
+                if (mIsRemoteKaleidoscopeInterfaceBound) {
+                    try {
+                        mRemoteKaleidoscopeInterface.drawLine(x1, y1, x2, y2);
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });
+
+        mOutputDrawingCanvas = findViewById(R.id.output_drawing_canvas);
+
         Intent remoteServiceIntent = createRemoteServiceIntent();
         if (remoteServiceIntent != null) {
             bindService(remoteServiceIntent, mRemoteServiceConnection, Context.BIND_AUTO_CREATE);
         }
-
-        Button testButton = findViewById(R.id.test_button);
-        testButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                sendDrawLineCommand();
-            }
-        });
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         EventBus.getDefault().register(this);
+        mOutputDrawingCanvas.resume();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         EventBus.getDefault().unregister(this);
+        mOutputDrawingCanvas.pause();
     }
 
     @Override
@@ -74,6 +109,11 @@ public class MainActivity extends AppCompatActivity {
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void processEvent(@NonNull DrawLineEvent event) {
+        if (mOutputDrawingCanvas != null) {
+            mOutputDrawingCanvas.drawLine(event.x1, event.y1, event.x2, event.y2);
+            Toast.makeText(this, "draw: " + event.x1 + "," + event.x2 , Toast.LENGTH_SHORT).show();
+        }
+		
         Toast.makeText(this, "Local Main Activity received DrawLineEvent!", Toast.LENGTH_SHORT).show();
     }
 
@@ -113,17 +153,4 @@ public class MainActivity extends AppCompatActivity {
         intent.setComponent(new ComponentName(info.serviceInfo.packageName, info.serviceInfo.name));
         return intent;
     }
-
-    private void sendDrawLineCommand() {
-        Log.d(TAG, "sendDrawLineCommand isBound = " + mIsRemoteKaleidoscopeInterfaceBound);
-
-        if (mIsRemoteKaleidoscopeInterfaceBound) {
-            try {
-                mRemoteKaleidoscopeInterface.drawLine(1, 1, 2, 2);
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
 }
